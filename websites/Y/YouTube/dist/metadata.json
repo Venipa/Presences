@@ -1,9 +1,13 @@
 {
   "author": {
-    "name": "Timeraa",
-    "id": "223238938716798978"
+    "name": "Cascade",
+    "id": "442612628104151040"
   },
   "contributors": [
+    {
+      "name": "Timeraa",
+      "id": "223238938716798978"
+    },
     {
       "name": "Bas950",
       "id": "241278257335500811"
@@ -31,7 +35,7 @@
     "www.youtube.com",
     "studio.youtube.com"
   ],
-  "version": "5.1.2",
+  "version": "6.0.0",
   "logo": "https://i.imgur.com/C9ZEmge.png",
   "thumbnail": "https://i.imgur.com/3QfIc5v.jpg",
   "color": "#E40813",
