@@ -48,6 +48,7 @@ const localizedStringKeys = {
   },
   IMAGES = {
     LOGO: "logoaltx1024",
+    LOGO_PLAYING: "logoalt_smallkeyx1024",
     PLAY: "playx1024",
     PAUSE: "pausex1024",
     BROWSE: "browsex1024",
@@ -75,6 +76,7 @@ interface VideoEntity {
   description: string;
   author: string;
   duration: string;
+  embedUrl: string;
   publication: {
     endDate: string;
     isLiveBroadcast: boolean;
@@ -101,7 +103,7 @@ function getQuery() {
 }
 const helper = {
   getVideoPlayer(): HTMLVideoElement {
-    return document.querySelector(`.ytd-player video`);
+    return document.querySelector(`.ytd-page-manager .ytd-player video`);
   },
   getVideoEntity(): VideoEntity {
     const object = Array.from(
@@ -110,6 +112,28 @@ const helper = {
       ?.textContent;
     if (!object) return null;
     return JSON.parse(object);
+  },
+  getPublisher() {
+    const id = document.querySelector<HTMLMetaElement>(
+      `meta[itemprop="channelId"]`
+    )?.content;
+    if (!id) return null;
+    return {
+      id,
+      url: `https://www.youtube.com/channel/${id}`
+    };
+  },
+  getChannel() {
+    const name = document.querySelector(
+      `#meta yt-formatted-string.ytd-channel-name`
+    )?.textContent;
+    return {
+      name,
+      url: document.location.href
+    };
+  },
+  isVideo() {
+    return !!document.location.href.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*?[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/gi);
   },
   replaceVars(input: string, keyVal: { [key: string]: string }) {
     if (!input) return input;
@@ -122,10 +146,13 @@ const helper = {
 (function () {
   const pages: PageContext[] = [
       {
-        middleware: (ref) => !!ref.document.querySelector(`.ytd-player video`),
+        middleware: (ref) => helper.isVideo() && !!ref.document.querySelector(`.ytd-player video`),
         exec: (context, data, { strings, images, settings }) => {
           const videoEntity = helper.getVideoEntity(),
-            videoPlayer = helper.getVideoPlayer();
+            videoPlayer = helper.getVideoPlayer(),
+            videoPublisher = helper.getPublisher();
+          if (!videoEntity) return null;
+          const videoId = videoEntity.embedUrl.match(/embed\/(\w+)/i)[1];
           data.details = helper.replaceVars(settings.vidDetail, {
             "%title%": videoEntity.name,
             "%uploader%": videoEntity.author
@@ -141,12 +168,29 @@ const helper = {
             );
             data.startTimestamp = start;
             data.endTimestamp = end;
-            data.smallImageKey = videoEntity.publication?.find(x => x.isLiveBroadcast && !x.endDate) ? images.LIVE : images.PLAY;
+            data.smallImageKey = videoEntity.publication?.find(
+              (x) => x.isLiveBroadcast && !x.endDate
+            )
+              ? images.LIVE
+              : images.PLAY;
             data.smallImageText = `${strings.play} ${data.details}`;
           } else {
             data.smallImageKey = images.PAUSE;
             delete data.startTimestamp;
             delete data.endTimestamp;
+          }
+          if (videoId) {
+            data.buttons = [
+              {
+                label: strings.watchVideoButton,
+                url: `https://www.youtube.com/watch?v=${videoId}`
+              }
+            ];
+            if (videoPublisher)
+              data.buttons.push({
+                label: strings.viewChannelButton,
+                url: videoPublisher.url
+              });
           }
           return data;
         },
@@ -154,6 +198,53 @@ const helper = {
           if (data.smallImageText) delete data.smallImageText;
           if (data.startTimestamp) delete data.startTimestamp;
           if (data.endTimestamp) delete data.endTimestamp;
+          if (data.buttons) delete data.buttons;
+        }
+      },
+      {
+        middleware: (ref) => !!ref.location.pathname.match(/^\/feed[/]/i),
+        exec: (context, data, { strings, images, settings }) => {
+          data.details = strings.browsingThrough;
+          data.state = `Feed`;
+          data.smallImageKey = images.BROWSE;
+          data.smallImageText = `${strings.browsingThrough} Feed`;
+          return data;
+        }
+      },
+      {
+        middleware: (ref) => !!ref.location.pathname.match(/^\/results/i),
+        exec: (context, data, { strings, images, settings }) => {
+          const value = document.querySelector<HTMLInputElement>(
+            `#search-input > input#search`
+          ).value;
+
+          data.details = strings.search;
+          data.state = `${value}`;
+          data.smallImageKey = images.SEARCH;
+          data.smallImageText = `${strings.search} ${value}`;
+          return data;
+        }
+      },
+      {
+        middleware: (ref) =>
+          !!ref.location.pathname.match(/\/c(hannel)?\/(.*)/i),
+        exec: (
+          context,
+          data,
+          { strings, images, settings }: ExecutionArguments
+        ) => {
+          const channel = helper.getChannel();
+          data.details = strings.viewChannel;
+          data.state = channel.name;
+          data.smallImageKey = images.BROWSE;
+          data.smallImageText = `${strings.viewChannel} ${channel.name}`;
+          data.buttons = [
+            {
+              label: strings.viewChannelButton,
+              url: channel.url
+            }
+          ];
+          return data;
         }
       },
       {
@@ -242,7 +333,6 @@ const helper = {
       );
       return await result
         .then((data) => {
-          log.debug("premid", data);
           if (
             lastPageIndex !== undefined &&
             lastPageIndex !== pageIndex &&
@@ -259,7 +349,14 @@ const helper = {
               state: localizedStrings.browsing
             });
           } else {
-            if (data.details) presence.setActivity(data);
+            if (data.details) {
+              if (data.smallImageKey) data.largeImageKey = IMAGES.LOGO_PLAYING;
+              else if (data.smallImageKey !== IMAGES.LOGO)
+                data.largeImageKey = IMAGES.LOGO;
+
+              if (!settings.buttons || settings.privacy) data.buttons = [];
+              presence.setActivity(data);
+            }
             if (data.buttons && data.buttons.length === 0) delete data.buttons;
             else data.buttons = data.buttons?.slice(0, 2);
           }
