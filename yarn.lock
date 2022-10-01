@@ -1999,10 +1999,10 @@ eslint-config-prettier@^8.5.0:
   resolved "https://registry.yarnpkg.com/eslint-config-prettier/-/eslint-config-prettier-8.5.0.tgz#5a81680ec934beca02c7b1a61cf8ca34b66feab1"
   integrity sha512-obmWKLUNCnhtQRKc+tmnYuQl0pFU1ibYJQ5BGhTVB08bHe9wC8qUeG7c08dj9XX+AuPj1YSGSQIHl1pnDHZR0Q==
 
-eslint-plugin-no-one-time-vars@^2.4.1:
-  version "2.4.1"
-  resolved "https://registry.yarnpkg.com/eslint-plugin-no-one-time-vars/-/eslint-plugin-no-one-time-vars-2.4.1.tgz#67656d5038718a83868ba956a609220e2222fce2"
-  integrity sha512-52IEHB8ekCiG3frIuQ0RiO/TNUltPZ76GxEoBAHwDkMXcVzOeHd7woPtMd87aYshsk8NIEInLNsaoPnCLZ5Cog==
+eslint-plugin-no-one-time-vars@^2.4.2:
+  version "2.4.2"
+  resolved "https://registry.yarnpkg.com/eslint-plugin-no-one-time-vars/-/eslint-plugin-no-one-time-vars-2.4.2.tgz#607e219670f2918480525b160022368e8da40312"
+  integrity sha512-5A7Qu1x/MedA3iLdbpFtCRzt59Ev0jT5/biwNl0PZV9GPr1YYU6EGmPcZhovTomE9xnaLtPReIsnEKDzKiixDg==
   dependencies:
     requireindex "^1.2.0"
 
